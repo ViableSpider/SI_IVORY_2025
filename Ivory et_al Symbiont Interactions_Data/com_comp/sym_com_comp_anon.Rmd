@@ -1,0 +1,160 @@
+---
+title: "Community Composition"
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+```{r Load packages}
+library(tidyverse)
+library(dplyr)
+library(glmmTMB)
+library(DHARMa)
+library(emmeans)
+```
+
+```{r Load Data}
+p_mix <- read.csv("pmix.csv")  
+```
+
+```{r Model for Cladocopium proportion}
+modelxsl = glmmTMB(props ~ treatment*time_point + (1|sample_name),
+                 family =beta_family(link = "logit"),
+            data=p_mix,
+            REML = TRUE)
+summary(modelxsl)
+simulateResiduals(modelxsl, plot = TRUE)
+emmeans::emmeans(modelxsl, ~ treatment|time_point, at=list(time_point = c('S1','S2','S3')), type = 'response') %>%
+  pairs()
+```
+
+```{r Pairwise Contrasts}
+mixed_seq_conts<- emmeans::emmeans(modelxsl, ~ treatment|time_point, at=list(time_point = c('S1','S2','S3')), type = 'response') %>%
+  pairs() %>%
+  summary(infer = TRUE) %>%
+  as.data.frame() %>% 
+  group_by(time_point) %>%
+  #arrange(odds.ratio) %>%
+  mutate(contrast = factor(contrast, levels = unique(contrast))) %>%
+  mutate(Flag = factor(ifelse(asymp.LCL > 1, 1, ifelse(asymp.UCL < 1, -1, 0)))) %>%
+  ggplot(aes(x = odds.ratio, y = contrast, colour = Flag)) +
+  geom_vline(xintercept = 1, linetype = "dashed") +
+  geom_pointrange(aes(xmin = asymp.LCL, xmax = asymp.UCL)) +
+  scale_x_continuous(trans = scales::log2_trans()) +
+  scale_colour_manual(breaks = c(-1,0,1), values = c("red", "black", "green")) +
+  facet_grid(~time_point)+
+  theme(plot.title = element_text(size = 20, face="bold",hjust=0.5),
+        axis.title.x = element_text(size = 18, face="bold"),
+        axis.title.y = element_blank(),
+        axis.text.x = element_text(size = 8, face="bold"),
+        axis.text.y = element_text(size = 14, face="bold"),
+        legend.title = element_text(size = 16, face="bold"),
+        legend.text = element_text(size = 12, face="bold"))+
+  labs(title = "Contrasts")
+mixed_seq_conts
+```
+
+```{r Individual Contrasts}
+p_mix$treatment %>% levels()
+
+cMat <- cbind("Dwt vs Dhe" = c(1/2, -1/2, 1/2, -1/2))  
+
+cMata <- cbind("Cwt vs Che" = c(1/2, 1/2, -1/2, -1/2))  
+
+crossprod(cMat)
+emmeans::emmeans(modelxsl, ~ treatment|time_point, at=list(time_point = 'S1'), type = 'response') %>%
+  contrast(method = list(Treatment = cMat))
+
+crossprod(cMata)
+emmeans::emmeans(modelxsl, ~ treatment|time_point, at=list(time_point = 'S1'), type = 'response') %>%
+  contrast(method = list(Treatment = cMata))
+
+crossprod(cMat)
+emmeans::emmeans(modelxsl, ~ treatment|time_point, at=list(time_point = 'S2'), type = 'response') %>%
+  contrast(method = list(Treatment = cMat))
+
+crossprod(cMata)
+emmeans::emmeans(modelxsl, ~ treatment|time_point, at=list(time_point = 'S2'), type = 'response') %>%
+  contrast(method = list(Treatment = cMata))
+
+
+crossprod(cMat)
+emmeans::emmeans(modelxsl, ~ treatment|time_point, at=list(time_point = 'S3'), type = 'response') %>%
+  contrast(method = list(Treatment = cMat))
+
+crossprod(cMata)
+emmeans::emmeans(modelxsl, ~ treatment|time_point, at=list(time_point = 'S3'), type = 'response') %>%
+  contrast(method = list(Treatment = cMata))
+```
+
+```{r Plot model}
+prop_c_mixed <-ggeffects::ggeffect(modelxsl, ~ time_point|treatment) %>% plot( line.size = 1.5,
+colors = c("#ee8e36","#1f59c5","#82ad0f","#16b4eb"))+ 
+   labs(
+    x = "Sampling Points",
+    y = "Proportion Cladocopium",
+    title = "Community Composition")+
+  theme(plot.title = element_text(size = 20, face="bold",hjust=0.5),
+        axis.title = element_text(size = 16, face="bold"),
+        axis.text = element_text(size = 14, face="bold"),
+        legend.title = element_text(size = 16, face="bold"),
+        legend.text = element_text(size = 12, face="bold"))
+
+prop_c_mixed
+
+# Generate the effect data
+prop_c_mixed_data <- ggeffects::ggeffect(modelxsl, terms = c("time_point", "treatment"))
+
+# Plot using ggplot2
+library(ggplot2)
+
+ggplot(prop_c_mixed_data, aes(x = x, y = predicted, color = group)) +
+  geom_line(size = 1.5) +
+  # Add the original data points
+  geom_point(data = p_mix, aes(x = time_point, y = props, color = treatment), alpha = 0.5) +
+  scale_color_manual(values = c("#ee8e36", "#1f59c5", "#82ad0f", "#16b4eb")) +
+  facet_wrap(~treatment) +  
+  labs(
+    x = "Sampling Points",
+    y = "Proportion Cladocopium",
+    title = "Community Composition"
+  ) +
+  theme(
+    plot.title = element_text(size = 20, face = "bold", hjust = 0.5),
+    axis.title = element_text(size = 16, face = "bold"),
+    axis.text = element_text(size = 14, face = "bold"),
+    legend.title = element_text(size = 16, face = "bold"),
+    legend.text = element_text(size = 12, face = "bold")
+  )
+
+# Generate the effect data from the model
+prop_c_mixed_data <- ggeffects::ggeffect(modelxsl, terms = c("time_point", "treatment")) |> 
+  rename(treatment = 'group')
+
+# Plot using ggplot2
+library(ggplot2)
+
+ggplot() +
+  # Add the model prediction lines
+  geom_point(data = prop_c_mixed_data, aes(x = x, y = predicted, color = treatment), size = 1.5) +
+  geom_ribbon(data = prop_c_mixed_data, aes(x = x, ymin = conf.low, ymax = conf.high, fill = treatment), alpha = 0.2) +
+   geom_errorbar(data = prop_c_mixed_data,aes(x=x,ymin=conf.low,ymax=conf.high,color=treatment,width=0.2))+
+  # Add the original data points as an overlay
+  geom_point(data = p_mix, aes(x = time_point, y = props), alpha = 0.3) +
+  # Customize color scale and facets
+  scale_color_manual(values = c("#ee8e36", "#1f59c5", "#82ad0f", "#16b4eb")) +
+  facet_wrap(~treatment) +
+  # Labels and theme settings
+  labs(
+    x = "Sampling Points",
+    y = "Proportion Cladocopium",
+    title = "Community Composition"
+  ) +
+  theme(
+    plot.title = element_text(size = 20, face = "bold", hjust = 0.5),
+    axis.title = element_text(size = 16, face = "bold"),
+    axis.text = element_text(size = 14, face = "bold"),
+    legend.title = element_text(size = 16, face = "bold"),
+    legend.text = element_text(size = 12, face = "bold")
+  )+
+  theme_bw()
+```

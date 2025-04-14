@@ -1,0 +1,54 @@
+---
+title: "Mock Community Analysis"
+output: html_document
+---
+--- 
+```{r Load packages}
+library(tidyverse)
+library(dplyr)
+```
+
+```{r}
+mock_props <- read.csv("mock_com_data.csv")  
+```
+
+```{r}
+mock_props_B <- mock_props %>%
+  filter(grepl('B', sample_name))
+
+mock_props_C <- mock_props %>%
+  filter(grepl('C', sample_name))
+
+mock_props_D <- mock_props %>%
+  filter(grepl('D', sample_name))%>%
+  drop_na()
+
+mock_props_E <- mock_props %>%
+  filter(grepl('E', sample_name))
+```
+
+```{r Set up vectors}
+#Observed
+Vpt_Mock_B <- mock_props_B$props [mock_props_B$genus == 'Cladocopium']                  
+Vpt_Mock_C <- mock_props_C$props [mock_props_C$genus == 'Cladocopium']  
+Vpt_Mock_D <- mock_props_D$props [mock_props_D$genus == 'Cladocopium']                  
+Vpt_Mock_E <- mock_props_E$props [mock_props_E$genus == 'Cladocopium']
+
+#Expected
+ex_B <- c(0.90, 0.90, 0.90, 0.90, 0.90, 0.90, 0.90, 0.90, 0.90, 0.90)
+ex_C <- c(0.66, 0.66, 0.66, 0.66, 0.66, 0.66, 0.66, 0.66, 0.66, 0.66, 0.66)
+ex_D <-  c(0.33, 0.33, 0.33, 0.33, 0.33, 0.33, 0.33, 0.33, 0.33, 0.33, 0.33)
+ex_E <-  c(0.10, 0.10, 0.10, 0.10, 0.10, 0.10, 0.10, 0.10, 0.10, 0.10, 0.10, 0.10)
+```
+
+```{r tTest on vectors}
+t.test(ex_B , Vpt_Mock_B)  
+t.test(ex_C , Vpt_Mock_C)  
+t.test(ex_D , Vpt_Mock_D)  
+t.test(ex_E , Vpt_Mock_E)  
+```
+```{r}
+data_list <- list('9:1 - O' = Vpt_Mock_B, '9:1 - E' = ex_B, '2:1 - O' = Vpt_Mock_C, '2:1 - E' = ex_C, '1:2 - O' = Vpt_Mock_D, '1:2 - E' = ex_D, '1:9 - O' = Vpt_Mock_E, '1:9 - E' = ex_E)
+
+boxplot(data_list, xlab = "Groups", ylab = "Values")
+```

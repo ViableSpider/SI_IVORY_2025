@@ -1,0 +1,117 @@
+---
+title: "Uptake"
+output: html_document
+---
+```{r Load packages}
+library(tidyverse)
+library(dplyr)
+```
+
+```{r}
+test_tD <- read.csv("uptake_data_D.csv")  
+test_tC <- read.csv("uptake_data_C.csv") 
+```
+
+```{r Mix v All}
+Vpt_Dwt <- test_tD$props [test_tD$treatment == 'Dwt']                  
+Vpt_Dhe <- test_tD$props [test_tD$treatment == 'Dhe']
+Vpt_CwtDwt <- test_tD$props [test_tD$treatment == 'CwtDwt']            
+Vpt_CheDwt <- test_tD$props [test_tD$treatment == 'CheDwt']             
+Vpt_CwtDhe <- test_tD$props [test_tD$treatment == 'CwtDhe']         
+Vpt_CheDhe <- test_tD$props [test_tD$treatment == 'CheDhe']
+###
+Vpt_Dsin<- c(Vpt_Dhe, Vpt_Dwt)   
+Vpt_Dmix<- c(Vpt_CwtDwt, Vpt_CheDwt,Vpt_CwtDhe,Vpt_CheDhe)
+###
+t.test(Vpt_Dsin , Vpt_Dmix)  #Dwt v CwtDwt
+
+perform_t_test <- function(Vpt_Dsin, Vpt_Dmix) {
+  t_test_result <- t.test(Vpt_Dsin, Vpt_Dmix)
+  return(t_test_result$p.value)
+}
+
+# Number of iterations for bootstrapping
+num_iterations <- 4000
+p_values_D <- numeric(num_iterations)
+
+# Perform t-test on random subsets
+set.seed(123)  # Setting seed for reproducibility
+for (i in 1:num_iterations) {
+  # Randomly sample subsets of the vectors
+  subset_indices <- sample(length(Vpt_Dsin), replace = TRUE)
+  Vpt_Dsin_subset <- Vpt_Dsin[subset_indices]
+  Vpt_Dmix_subset <- Vpt_Dmix[subset_indices]
+  
+  # Perform t-test on the subsets and store p-values
+  p_values_D[i] <- perform_t_test(Vpt_Dsin_subset, Vpt_Dmix_subset)
+}
+
+# Calculate power (proportion of significant tests)
+alpha <- 0.05  # Significance level
+power <- mean(p_values_D < alpha)
+avg <-mean(p_values_D)
+
+# Display power
+cat("Power:", power, "\n")
+```
+
+```{r Mix v All}
+Vpt_Cwt <- test_tC$props [test_tC$treatment == 'Cwt']                  
+Vpt_Che <- test_tC$props [test_tC$treatment == 'Che']
+Vpt_CwtDwt <- test_tC$props [test_tC$treatment == 'CwtDwt']            
+Vpt_CheDwt <- test_tC$props [test_tC$treatment == 'CheDwt']             
+Vpt_CwtDhe <- test_tC$props [test_tC$treatment == 'CwtDhe']         
+Vpt_CheDhe <- test_tC$props [test_tC$treatment == 'CheDhe']
+###
+Vpt_Csin<- c(Vpt_Cwt, Vpt_Dwt)   
+Vpt_Cmix<- c(Vpt_CwtDwt, Vpt_CheDwt,Vpt_CwtDhe,Vpt_CheDhe)
+###
+t.test(Vpt_Csin , Vpt_Cmix)  #Dwt v CwtDwt
+
+perform_t_test <- function(Vpt_Csin, Vpt_Cmix) {
+  t_test_result <- t.test(Vpt_Csin, Vpt_Cmix)
+  return(t_test_result$p.value)
+}
+
+# Number of iterations for bootstrapping
+num_iterations <- 4000
+p_values_C <- numeric(num_iterations)
+
+# Perform t-test on random subsets
+set.seed(123)  # Setting seed for reproducibility
+for (i in 1:num_iterations) {
+  # Randomly sample subsets of the vectors
+  subset_indices <- sample(length(Vpt_Csin), replace = TRUE)
+  Vpt_Csin_subset <- Vpt_Csin[subset_indices]
+  Vpt_Cmix_subset <- Vpt_Cmix[subset_indices]
+  
+  # Perform t-test on the subsets and store p-values
+  p_values_C[i] <- perform_t_test(Vpt_Csin_subset, Vpt_Cmix_subset)
+}
+
+# Calculate power (proportion of significant tests)
+alpha <- 0.05  # Significance level
+power <- mean(p_values_C < alpha)
+avg <-mean(p_values_C)
+# Display power
+cat("Power:", power, "\n")
+```
+
+```{r Dwt Plot}
+boxplot(Vpt_Csin, Vpt_Cmix,
+        main = "Durusdinium uptake",
+xlab = "Treatment",
+ylab = "Proportion Durusdinium",
+#ylim = c(0, 0.10),
+col =c( "#15b418","#ee8e36","#82ad0f"),
+border = "black")
+```
+
+```{r C Plot}
+boxplot(Vpt_Dsin, Vpt_Dmix,
+        main = "Cladocopium uptake",
+xlab = "Treatment",
+ylab = "Proportion Cladocopium",
+col =c( "#bc58dc","#1f59c5","#16b4eb"),
+border = "black")
+```

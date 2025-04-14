@@ -1,0 +1,22 @@
+---
+title: "survXsize"
+output: html_document
+---
+
+```{r Packages}
+library(tidyverse)
+library(dplyr)
+```
+
+```{r Load Data}
+surv_size_g <- read.csv("surv_size.csv")
+```
+
+```{r Survival v Size}
+surv_size_g %>% ggplot(aes(x = survival, y = area)) + 
+  geom_point(aes(color = Treatment, size = Day), size = 2) +
+  geom_path(aes(group = Treatment, color = Treatment), size = 1.25) + 
+  coord_flip() + 
+  scale_color_manual(values = c("#f678d8", "#1f59c5", "#82ad0f", "#ee8e36", "#16b4eb", "#15b418", "#bc58dc")) +
+  labs(x = "Survival", y = "Area")
+```

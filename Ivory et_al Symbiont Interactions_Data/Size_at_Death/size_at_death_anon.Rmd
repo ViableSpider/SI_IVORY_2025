@@ -1,0 +1,61 @@
+---
+title: "s_d"
+output: html_document
+---
+
+```{r Packages}
+library(tidyverse)
+library(dplyr)
+```
+
+```{r Load Data}
+P1_all <- read.csv("s_d.csv")
+```
+
+```{r}
+P1_11<- P1_all%>%
+  filter(Day == 11)%>%
+  drop_na()
+P1_18<- P1_all%>%
+  filter(Day == 18)%>%
+  drop_na()
+P1_24<- P1_all%>%
+  filter(Day == 24)%>%
+  drop_na()
+P1_38<- P1_all%>%
+  filter(Day == 38)%>%
+  drop_na()
+P1_46<- P1_all%>%
+  filter(Day == 46)%>%
+  drop_na()
+P1_54<- P1_all%>%
+  filter(Day == 54)%>%
+  drop_na()
+P1_60<- P1_all%>%
+  filter(Day == 60)%>%
+  drop_na()
+```
+
+```{r ANOVAs}
+model_11 <- aov(polyp_area ~ Treatment*last, data = P1_11)
+model_18 <- aov(polyp_area ~ Treatment*last, data = P1_18)
+model_24 <- aov(polyp_area ~ Treatment*last, data = P1_24)
+model_38 <- aov(polyp_area ~ Treatment*last, data = P1_38)
+model_46 <- aov(polyp_area ~ Treatment*last, data = P1_46)
+model_54 <- aov(polyp_area ~ Treatment*last, data = P1_54)
+model_60 <- aov(polyp_area ~ Treatment*last, data = P1_60)
+
+summary(model_11)
+summary(model_18)
+summary(model_24)
+summary(model_38)
+summary(model_46)
+summary(model_54)
+summary(model_60)
+```
+
+```{r Graph}
+ggplot(P1_all, aes(y=polyp_area, x=Treatment , fill=last)) +
+     geom_boxplot()+
+    facet_wrap(~ Day, scales = "free_y")
+```
